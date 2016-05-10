@@ -10,7 +10,7 @@ func (pool *Pool) worker() {
 	// Catch panics and notify of exit.
 	defer func() {
 		recover()
-		pool.exitCh <- struct{}{}
+		pool.workerExitedCh <- struct{}{}
 	}()
 
 	for job := range pool.jobsCh {
