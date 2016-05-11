@@ -1,9 +1,14 @@
 package ozero
 
 import (
+	"fmt"
+	"os"
 	"runtime"
 	"sync"
 )
+
+// ErrorFunc represents an error handling function for panics happening in workers.
+type ErrorFunc func(error)
 
 // Pool represents a thread (goroutine) pool. All of his methods are thread-safe.
 type Pool struct {
@@ -13,6 +18,7 @@ type Pool struct {
 	exitCh         chan struct{}
 	jobsCh         chan job
 	workers        map[string]WorkerFunc
+	errorFunc      ErrorFunc
 }
 
 // NewPool creates a new pool with predefined size.
@@ -29,6 +35,9 @@ func NewPoolN(size int) *Pool {
 		exitCh:         make(chan struct{}),
 		jobsCh:         make(chan job),
 		workers:        make(map[string]WorkerFunc),
+		errorFunc: func(err error) {
+			fmt.Fprint(os.Stderr, err)
+		},
 	}
 
 	go pool.ensureRunning()

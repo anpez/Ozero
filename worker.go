@@ -1,5 +1,7 @@
 package ozero
 
+import "fmt"
+
 // WorkerFunc defines a function that receives a job and processes it.
 type WorkerFunc func(interface{})
 
@@ -9,7 +11,17 @@ const DefaultWorkerID string = "_DEFAULT"
 func (pool *Pool) worker() {
 	// Catch panics and notify of exit.
 	defer func() {
-		recover()
+		if r := recover(); nil != r {
+			err, ok := r.(error)
+			if !ok {
+				err = fmt.Errorf("pkg: %v", r)
+			}
+			pool.RLock()
+			defer pool.RUnlock()
+			if nil != pool.errorFunc {
+				pool.errorFunc(err)
+			}
+		}
 		pool.workerExitedCh <- struct{}{}
 	}()
 
@@ -38,5 +50,15 @@ func (pool *Pool) AddWorkerFuncForWorkerID(workerID string, f WorkerFunc) *Pool 
 	defer pool.Unlock()
 
 	pool.workers[workerID] = f
+	return pool
+}
+
+// SetErrorFunc sets the function to be executed when a panic occurrs in a worker.
+// If nil, nothing gets executed on panic.
+func (pool *Pool) SetErrorFunc(f ErrorFunc) *Pool {
+	pool.Lock()
+	defer pool.Unlock()
+
+	pool.errorFunc = f
 	return pool
 }
