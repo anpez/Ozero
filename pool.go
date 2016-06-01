@@ -21,6 +21,7 @@ type Pool struct {
 	workers        map[string]WorkerFunc
 	errorFunc      ErrorFunc
 	closed         bool
+	totalTryCount  int
 }
 
 // NewPool creates a new pool with predefined size.
@@ -37,6 +38,7 @@ func NewPoolN(size int) *Pool {
 		exitCh:         make(chan struct{}),
 		jobsCh:         make(chan job),
 		workers:        make(map[string]WorkerFunc),
+		totalTryCount:  1,
 		errorFunc: func(data interface{}, err error) {
 			fmt.Fprint(os.Stderr, err)
 		},

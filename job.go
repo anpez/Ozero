@@ -27,3 +27,14 @@ func (pool *Pool) SendJob(data interface{}) {
 func (pool *Pool) SendJobForWorkerID(workerID string, data interface{}) {
 	go pool.addJob(workerID, data)
 }
+
+// SetTries sets the default amount of times a failing job gets re-executed before giving up and calling error function.
+// The default amount of times is 1. Set to zero to retry indefinitely.
+func (pool *Pool) SetTries(count int) *Pool {
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+
+	pool.totalTryCount = count
+
+	return pool
+}

@@ -30,11 +30,42 @@ func (pool *Pool) worker() {
 	for job = range pool.jobsCh {
 		pool.mutex.RLock()
 		f := pool.workers[job.WorkerID]
+		tries := pool.totalTryCount
 		pool.mutex.RUnlock()
+
 		if nil != f {
-			f(job.Data)
+			var err error
+			for i := 0; ; i++ {
+				err = pool.work(f, job.Data)
+				if nil == err {
+					break
+				}
+				if (0 != tries) && (i >= tries) {
+					break
+				}
+			}
+			if nil != err {
+				panic(err)
+			}
 		}
 	}
+}
+
+func (pool *Pool) work(f WorkerFunc, data interface{}) (ret error) {
+	// Catch panics and notify of exit.
+	defer func() {
+		if r := recover(); nil != r {
+			err, ok := r.(error)
+			if !ok {
+				err = fmt.Errorf("pkg: %v", r)
+			}
+			ret = err
+		}
+	}()
+
+	f(data)
+
+	return nil
 }
 
 // AddWorkerFunc adds the function to be processed when sending jobs to the default workerId.
