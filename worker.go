@@ -1,6 +1,9 @@
 package ozero
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // WorkerFunc defines a function that receives a job and processes it.
 type WorkerFunc func(interface{})
@@ -31,18 +34,20 @@ func (pool *Pool) worker() {
 		pool.mutex.RLock()
 		f := pool.workers[job.WorkerID]
 		tries := pool.totalTryCount
+		delay := pool.retryTimeout
 		pool.mutex.RUnlock()
 
 		if nil != f {
 			var err error
 			for i := 0; ; i++ {
 				err = pool.work(f, job.Data)
-				if nil == err {
+				if nil == err { // Executed successfully
 					break
 				}
-				if (0 != tries) && (i >= tries) {
+				if (0 != tries) && (i >= tries) { // Maximum try count not infinite and exceeded.
 					break
 				}
+				time.Sleep(delay)
 			}
 			if nil != err {
 				panic(err)

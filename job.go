@@ -1,5 +1,7 @@
 package ozero
 
+import "time"
+
 type job struct {
 	WorkerID string
 	Data     interface{}
@@ -35,6 +37,17 @@ func (pool *Pool) SetTries(count int) *Pool {
 	defer pool.mutex.Unlock()
 
 	pool.totalTryCount = count
+
+	return pool
+}
+
+// SetRetryTimeout sets the default timeout after a failing function gets retried.
+// Default is retry inmediately.
+func (pool *Pool) SetRetryTimeout(d time.Duration) *Pool {
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+
+	pool.retryTimeout = d
 
 	return pool
 }

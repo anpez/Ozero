@@ -5,6 +5,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"time"
 )
 
 // ErrorFunc represents an error handling function for panics happening in workers.
@@ -22,6 +23,7 @@ type Pool struct {
 	errorFunc      ErrorFunc
 	closed         bool
 	totalTryCount  int
+	retryTimeout   time.Duration
 }
 
 // NewPool creates a new pool with predefined size.

@@ -1,6 +1,7 @@
 package ozero
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -28,7 +29,7 @@ func TestDoubleCloseDoesNotCrash(t *testing.T) {
 }
 
 func TestErrorFuncGetsCalledOnPanic(t *testing.T) {
-	c := make(chan struct{})
+	c := make(chan struct{}, 1)
 
 	pool := NewPool()
 	defer pool.Close()
@@ -54,8 +55,8 @@ func TestErrorFuncGetsCalledOnPanic(t *testing.T) {
 func TestFuncGetsRetriedExactly3Times(t *testing.T) {
 	const RETRY = 3
 
-	wch := make(chan struct{}, RETRY)
-	ech := make(chan struct{})
+	wch := make(chan struct{}, RETRY*2)
+	ech := make(chan struct{}, 2)
 
 	pool := NewPool()
 	defer pool.Close()
@@ -89,4 +90,47 @@ func TestFuncGetsRetriedExactly3Times(t *testing.T) {
 	}
 	// Assert error function got called after retries
 	assert.NotNil(t, <-ech)
+}
+
+func TestFuncGetsRetriedAfterADelay(t *testing.T) {
+	const RETRY = 2
+	const DELAY = 100 * time.Millisecond
+
+	wch := make(chan time.Time, RETRY*2)
+	ech := make(chan struct{}, 2)
+
+	pool := NewPool()
+	defer pool.Close()
+
+	pool.AddWorkerFunc(func(data interface{}) {
+		assert.IsType(t, 1, data)
+		assert.Equal(t, 1, data)
+		wch <- time.Now()
+		panic("an error")
+	}).SetErrorFunc(func(data interface{}, err error) {
+		assert.IsType(t, 1, data)
+		assert.Equal(t, 1, data)
+		ech <- struct{}{}
+	}).SetTries(RETRY).SetRetryTimeout(DELAY)
+
+	pool.SendJob(1)
+
+	go func() {
+		<-time.After(time.Second)
+		assert.Fail(t, "Test got stuck")
+		// Force the test to end
+		for i := 0; i < RETRY; i++ {
+			wch <- time.Now()
+		}
+		ech <- struct{}{}
+	}()
+
+	// Assert error function got called after retries
+	assert.NotNil(t, <-ech)
+
+	// Assert function gets called RETRY times
+	t1 := <-wch
+	t2 := <-wch
+	msg := fmt.Sprintf("Expecting retry delay of at least %dms, got %dms", DELAY/time.Millisecond, t2.Sub(t1)/time.Millisecond)
+	assert.True(t, t2.After(t1.Add(DELAY)), msg)
 }
