@@ -6,7 +6,13 @@ type job struct {
 }
 
 func (pool *Pool) addJob(workerID string, data interface{}) {
-	pool.jobsCh <- job{workerID, data}
+	pool.mutex.RLock()
+	defer pool.mutex.RUnlock()
+
+	// If closed, do nothing.
+	if !pool.closed {
+		pool.jobsCh <- job{workerID, data}
+	}
 }
 
 // SendJob sends a new job to the pool to be processed by the default worker.

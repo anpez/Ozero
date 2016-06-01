@@ -18,8 +18,8 @@ func (pool *Pool) worker() {
 			if !ok {
 				err = fmt.Errorf("pkg: %v", r)
 			}
-			pool.RLock()
-			defer pool.RUnlock()
+			pool.mutex.RLock()
+			defer pool.mutex.RUnlock()
 			if nil != pool.errorFunc {
 				pool.errorFunc(job.Data, err)
 			}
@@ -28,9 +28,9 @@ func (pool *Pool) worker() {
 	}()
 
 	for job = range pool.jobsCh {
-		pool.RLock()
+		pool.mutex.RLock()
 		f := pool.workers[job.WorkerID]
-		pool.RUnlock()
+		pool.mutex.RUnlock()
 		if nil != f {
 			f(job.Data)
 		}
@@ -39,8 +39,8 @@ func (pool *Pool) worker() {
 
 // AddWorkerFunc adds the function to be processed when sending jobs to the default workerId.
 func (pool *Pool) AddWorkerFunc(f WorkerFunc) *Pool {
-	pool.Lock()
-	defer pool.Unlock()
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
 
 	pool.workers["_DEFAULT"] = f
 	return pool
@@ -48,8 +48,8 @@ func (pool *Pool) AddWorkerFunc(f WorkerFunc) *Pool {
 
 // AddWorkerFuncForWorkerID adds the function to be processed when sending jobs to the specified workerId.
 func (pool *Pool) AddWorkerFuncForWorkerID(workerID string, f WorkerFunc) *Pool {
-	pool.Lock()
-	defer pool.Unlock()
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
 
 	pool.workers[workerID] = f
 	return pool
@@ -58,8 +58,8 @@ func (pool *Pool) AddWorkerFuncForWorkerID(workerID string, f WorkerFunc) *Pool 
 // SetErrorFunc sets the function to be executed when a panic occurrs in a worker.
 // If nil, nothing gets executed on panic.
 func (pool *Pool) SetErrorFunc(f ErrorFunc) *Pool {
-	pool.Lock()
-	defer pool.Unlock()
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
 
 	pool.errorFunc = f
 	return pool

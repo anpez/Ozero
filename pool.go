@@ -13,13 +13,14 @@ type ErrorFunc func(data interface{}, err error)
 
 // Pool represents a thread (goroutine) pool. All of his methods are thread-safe.
 type Pool struct {
-	sync.RWMutex
+	mutex          sync.RWMutex
 	size           int
 	workerExitedCh chan struct{}
 	exitCh         chan struct{}
 	jobsCh         chan job
 	workers        map[string]WorkerFunc
 	errorFunc      ErrorFunc
+	closed         bool
 }
 
 // NewPool creates a new pool with predefined size.
@@ -74,8 +75,13 @@ func (pool *Pool) CloseAsync() {
 
 // Close closes the pool inmediately, waiting for the running tasks to end.
 func (pool *Pool) Close() {
-	pool.Lock()
-	defer pool.Unlock()
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+
+	// If already closed, do nothing
+	if pool.closed {
+		return
+	}
 
 	// Ensure new goroutines aren't spawned
 	pool.exitCh <- struct{}{}
@@ -85,4 +91,6 @@ func (pool *Pool) Close() {
 	for i := 0; i < pool.size; i++ {
 		<-pool.workerExitedCh
 	}
+
+	pool.closed = true
 }
