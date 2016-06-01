@@ -39,13 +39,17 @@ func (pool *Pool) worker() {
 
 		if nil != f {
 			var err error
-			for i := 0; ; i++ {
+			var currentTry = 0
+			for {
 				err = pool.work(f, job.Data)
 				if nil == err { // Executed successfully
 					break
 				}
-				if (0 != tries) && (i >= tries) { // Maximum try count not infinite and exceeded.
-					break
+				if 0 != tries { // Maximum try count not infinite.
+					currentTry++
+					if currentTry >= tries { // Maximum try count exceeded.
+						break
+					}
 				}
 				time.Sleep(delay)
 			}
