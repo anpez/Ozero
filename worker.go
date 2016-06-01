@@ -9,6 +9,8 @@ type WorkerFunc func(interface{})
 const DefaultWorkerID string = "_DEFAULT"
 
 func (pool *Pool) worker() {
+	var job job
+
 	// Catch panics and notify of exit.
 	defer func() {
 		if r := recover(); nil != r {
@@ -19,13 +21,13 @@ func (pool *Pool) worker() {
 			pool.RLock()
 			defer pool.RUnlock()
 			if nil != pool.errorFunc {
-				pool.errorFunc(err)
+				pool.errorFunc(job.Data, err)
 			}
 		}
 		pool.workerExitedCh <- struct{}{}
 	}()
 
-	for job := range pool.jobsCh {
+	for job = range pool.jobsCh {
 		pool.RLock()
 		f := pool.workers[job.WorkerID]
 		pool.RUnlock()

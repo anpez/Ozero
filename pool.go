@@ -8,7 +8,8 @@ import (
 )
 
 // ErrorFunc represents an error handling function for panics happening in workers.
-type ErrorFunc func(error)
+// It receives the data failing in the operation and the error occured.
+type ErrorFunc func(data interface{}, err error)
 
 // Pool represents a thread (goroutine) pool. All of his methods are thread-safe.
 type Pool struct {
@@ -35,7 +36,7 @@ func NewPoolN(size int) *Pool {
 		exitCh:         make(chan struct{}),
 		jobsCh:         make(chan job),
 		workers:        make(map[string]WorkerFunc),
-		errorFunc: func(err error) {
+		errorFunc: func(data interface{}, err error) {
 			fmt.Fprint(os.Stderr, err)
 		},
 	}
