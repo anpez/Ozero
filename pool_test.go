@@ -111,7 +111,7 @@ func TestFuncGetsRetriedAfterADelay(t *testing.T) {
 		assert.IsType(t, 1, data)
 		assert.Equal(t, 1, data)
 		ech <- struct{}{}
-	}).SetTries(RETRY).SetRetryTimeout(DELAY)
+	}).SetTries(RETRY).SetRetryDelay(DELAY)
 
 	pool.SendJob(1)
 

@@ -41,9 +41,9 @@ func (pool *Pool) SetTries(count int) *Pool {
 	return pool
 }
 
-// SetRetryTimeout sets the default timeout after a failing function gets retried.
+// SetRetryDelay sets the default timeout after a failing function gets retried.
 // Default is retry inmediately.
-func (pool *Pool) SetRetryTimeout(d time.Duration) *Pool {
+func (pool *Pool) SetRetryDelay(d time.Duration) *Pool {
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 
