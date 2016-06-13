@@ -98,3 +98,10 @@ func (pool *Pool) Close() {
 
 	pool.closed = true
 }
+
+// GetSize returns the number of threads in the pool.
+func (pool *Pool) GetSize() int {
+	pool.mutex.RLock()
+	defer pool.mutex.RUnlock()
+	return pool.size
+}

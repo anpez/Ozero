@@ -82,7 +82,7 @@ func (pool *Pool) AddWorkerFunc(f WorkerFunc) *Pool {
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 
-	pool.workers["_DEFAULT"] = f
+	pool.workers[DefaultWorkerID] = f
 	return pool
 }
 
