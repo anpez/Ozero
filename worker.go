@@ -35,6 +35,7 @@ func (pool *Pool) worker() {
 		f := pool.workers[job.WorkerID]
 		tries := pool.totalTryCount
 		delay := pool.retryTimeout
+		shouldRetryFunc := pool.shouldRetryFunc
 		pool.mutex.RUnlock()
 
 		if nil != f {
@@ -48,6 +49,11 @@ func (pool *Pool) worker() {
 				if 0 != tries { // Maximum try count not infinite.
 					currentTry++
 					if currentTry >= tries { // Maximum try count exceeded.
+						break
+					}
+				}
+				if nil != shouldRetryFunc {
+					if !shouldRetryFunc(job.Data, err, currentTry-1) {
 						break
 					}
 				}
@@ -102,5 +108,14 @@ func (pool *Pool) SetErrorFunc(f ErrorFunc) *Pool {
 	defer pool.mutex.Unlock()
 
 	pool.errorFunc = f
+	return pool
+}
+
+// SetShouldRetryFunc sets a function to be executed when a panic occurrs, to determine if the job should be retried.
+func (pool *Pool) SetShouldRetryFunc(f ShouldRetryFunc) *Pool {
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+
+	pool.shouldRetryFunc = f
 	return pool
 }

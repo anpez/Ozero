@@ -10,20 +10,28 @@ import (
 
 // ErrorFunc represents an error handling function for panics happening in workers.
 // It receives the data failing in the operation and the error occured.
+// It is only called after all the retries failed.
 type ErrorFunc func(data interface{}, err error)
+
+// ShouldRetryFunc represents an error handling function for panics happening in workers.
+// It receives the data failing in the operation, the error occured and the current retry count, eg. 0 if first time, 1 if second.
+// Should return whether the op has to be retried or not.
+// It is only called if there are remaining retries left.
+type ShouldRetryFunc func(data interface{}, err error, retry int) bool
 
 // Pool represents a thread (goroutine) pool. All of his methods are thread-safe.
 type Pool struct {
-	mutex          sync.RWMutex
-	size           int
-	workerExitedCh chan struct{}
-	exitCh         chan struct{}
-	jobsCh         chan job
-	workers        map[string]WorkerFunc
-	errorFunc      ErrorFunc
-	closed         bool
-	totalTryCount  int
-	retryTimeout   time.Duration
+	mutex           sync.RWMutex
+	size            int
+	workerExitedCh  chan struct{}
+	exitCh          chan struct{}
+	jobsCh          chan job
+	workers         map[string]WorkerFunc
+	errorFunc       ErrorFunc
+	shouldRetryFunc ShouldRetryFunc
+	closed          bool
+	totalTryCount   int
+	retryTimeout    time.Duration
 }
 
 // NewPool creates a new pool with predefined size.
