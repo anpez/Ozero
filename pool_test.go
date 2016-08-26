@@ -2,9 +2,10 @@ package ozero
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewPoolRunsOk(t *testing.T) {
@@ -13,7 +14,7 @@ func TestNewPoolRunsOk(t *testing.T) {
 	pool := NewPool()
 	defer pool.Close()
 
-	pool.AddWorkerFunc(func(data interface{}) {
+	pool.SetWorkerFunc(func(data interface{}) {
 		assert.IsType(t, 1, data)
 		assert.Equal(t, 1, data)
 		c <- struct{}{}
@@ -34,7 +35,7 @@ func TestErrorFuncGetsCalledOnPanic(t *testing.T) {
 	pool := NewPool()
 	defer pool.Close()
 
-	pool.AddWorkerFunc(func(data interface{}) {
+	pool.SetWorkerFunc(func(data interface{}) {
 		panic("an error")
 	}).SetErrorFunc(func(data interface{}, err error) {
 		assert.IsType(t, 1, data)
@@ -61,7 +62,7 @@ func TestFuncGetsRetriedExactly3Times(t *testing.T) {
 	pool := NewPool()
 	defer pool.Close()
 
-	pool.AddWorkerFunc(func(data interface{}) {
+	pool.SetWorkerFunc(func(data interface{}) {
 		assert.IsType(t, 1, data)
 		assert.Equal(t, 1, data)
 		wch <- struct{}{}
@@ -102,7 +103,7 @@ func TestFuncGetsRetriedAfterADelay(t *testing.T) {
 	pool := NewPool()
 	defer pool.Close()
 
-	pool.AddWorkerFunc(func(data interface{}) {
+	pool.SetWorkerFunc(func(data interface{}) {
 		assert.IsType(t, 1, data)
 		assert.Equal(t, 1, data)
 		wch <- time.Now()

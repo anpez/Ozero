@@ -8,9 +8,6 @@ import (
 // WorkerFunc defines a function that receives a job and processes it.
 type WorkerFunc func(interface{})
 
-// DefaultWorkerID is the default WorkerID when posting jobs without defined WorkerID.
-const DefaultWorkerID string = "_DEFAULT"
-
 func (pool *Pool) worker() {
 	var job job
 
@@ -32,7 +29,7 @@ func (pool *Pool) worker() {
 
 	for job = range pool.jobsCh {
 		pool.mutex.RLock()
-		f := pool.workers[job.WorkerID]
+		f := pool.workerFunc
 		tries := pool.totalTryCount
 		delay := pool.retryTimeout
 		shouldRetryFunc := pool.shouldRetryFunc
@@ -83,21 +80,12 @@ func (pool *Pool) work(f WorkerFunc, data interface{}) (ret error) {
 	return nil
 }
 
-// AddWorkerFunc adds the function to be processed when sending jobs to the default workerId.
-func (pool *Pool) AddWorkerFunc(f WorkerFunc) *Pool {
+// SetWorkerFunc sets the function to be processed when sending jobs to the worker.
+func (pool *Pool) SetWorkerFunc(f WorkerFunc) *Pool {
 	pool.mutex.Lock()
 	defer pool.mutex.Unlock()
 
-	pool.workers[DefaultWorkerID] = f
-	return pool
-}
-
-// AddWorkerFuncForWorkerID adds the function to be processed when sending jobs to the specified workerId.
-func (pool *Pool) AddWorkerFuncForWorkerID(workerID string, f WorkerFunc) *Pool {
-	pool.mutex.Lock()
-	defer pool.mutex.Unlock()
-
-	pool.workers[workerID] = f
+	pool.workerFunc = f
 	return pool
 }
 

@@ -26,7 +26,7 @@ type Pool struct {
 	workerExitedCh  chan struct{}
 	exitCh          chan struct{}
 	jobsCh          chan job
-	workers         map[string]WorkerFunc
+	workerFunc      WorkerFunc
 	errorFunc       ErrorFunc
 	shouldRetryFunc ShouldRetryFunc
 	closed          bool
@@ -47,7 +47,6 @@ func NewPoolN(size int) *Pool {
 		workerExitedCh: make(chan struct{}),
 		exitCh:         make(chan struct{}),
 		jobsCh:         make(chan job),
-		workers:        make(map[string]WorkerFunc),
 		totalTryCount:  1,
 		errorFunc: func(data interface{}, err error) {
 			fmt.Fprint(os.Stderr, err)
