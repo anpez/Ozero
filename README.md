@@ -5,6 +5,38 @@
 
 Ozero is a thread pool for Go, focused on simplicity
 
+# Usage example
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+
+	"github.com/ANPez/Ozero"
+)
+
+func main() {
+    nThreads := 10
+
+	taskPool := ozero.NewPoolN(nThreads).AddWorkerFunc(func(data interface{}) {
+		url := data.(string)
+		log.Printf("Downloading URL: %s.", url)
+		downloadOrPanic(url)
+		log.Printf("Job finished ok")
+	}).SetErrorFunc(func(data interface{}, err error) {
+		log.Printf("Error while processing job in queue")
+	}).SetShouldRetryFunc(func(data interface{}, err error, retry int) bool {
+		switch err := err.(type) {
+		case *types.HTTPError:
+			return (err.StatusCode < 400) || (err.StatusCode >= 500)
+		}
+		return true
+	}).SetTries(3).SetRetryDelay(time.Second)
+}
+```
+
 ## License
     Copyright 2016 Antonio Nicolás Pina
 
