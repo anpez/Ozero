@@ -87,23 +87,23 @@ func (pool *Pool) CloseAsync() {
 // Close closes the pool inmediately, waiting for the running tasks to end.
 func (pool *Pool) Close() {
 	pool.mutex.Lock()
-	defer pool.mutex.Unlock()
 
 	// If already closed, do nothing
 	if pool.closed {
+		pool.mutex.Unlock()
 		return
 	}
 
 	// Ensure new goroutines aren't spawned
+	pool.closed = true
 	pool.exitCh <- struct{}{}
 
 	// Signal all goroutines to end
 	close(pool.jobsCh)
+	pool.mutex.Unlock()
 	for i := 0; i < pool.size; i++ {
 		<-pool.workerExitedCh
 	}
-
-	pool.closed = true
 }
 
 // GetSize returns the number of threads in the pool.
