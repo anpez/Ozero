@@ -14,10 +14,11 @@ func TestNewPoolRunsOk(t *testing.T) {
 	pool := NewPool()
 	defer pool.Close()
 
-	pool.SetWorkerFunc(func(data interface{}) {
+	pool.SetWorkerFunc(func(data interface{}) error {
 		assert.IsType(t, 1, data)
 		assert.Equal(t, 1, data)
 		c <- struct{}{}
+		return nil
 	})
 	pool.SendJob(1)
 	assert.NotNil(t, <-c)
@@ -35,8 +36,9 @@ func TestErrorFuncGetsCalledOnPanic(t *testing.T) {
 	pool := NewPool()
 	defer pool.Close()
 
-	pool.SetWorkerFunc(func(data interface{}) {
+	pool.SetWorkerFunc(func(data interface{}) error {
 		panic("an error")
+		return nil
 	}).SetErrorFunc(func(data interface{}, err error) {
 		assert.IsType(t, 1, data)
 		assert.Equal(t, 1, data)
@@ -62,11 +64,12 @@ func TestFuncGetsRetriedExactly3Times(t *testing.T) {
 	pool := NewPool()
 	defer pool.Close()
 
-	pool.SetWorkerFunc(func(data interface{}) {
+	pool.SetWorkerFunc(func(data interface{}) error {
 		assert.IsType(t, 1, data)
 		assert.Equal(t, 1, data)
 		wch <- struct{}{}
 		panic("an error")
+		return nil
 	}).SetErrorFunc(func(data interface{}, err error) {
 		assert.IsType(t, 1, data)
 		assert.Equal(t, 1, data)
@@ -103,11 +106,12 @@ func TestFuncGetsRetriedAfterADelay(t *testing.T) {
 	pool := NewPool()
 	defer pool.Close()
 
-	pool.SetWorkerFunc(func(data interface{}) {
+	pool.SetWorkerFunc(func(data interface{}) error {
 		assert.IsType(t, 1, data)
 		assert.Equal(t, 1, data)
 		wch <- time.Now()
 		panic("an error")
+		return nil
 	}).SetErrorFunc(func(data interface{}, err error) {
 		assert.IsType(t, 1, data)
 		assert.Equal(t, 1, data)
