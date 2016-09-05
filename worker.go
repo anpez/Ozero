@@ -6,7 +6,7 @@ import (
 )
 
 // WorkerFunc defines a function that receives a job and processes it.
-type WorkerFunc func(interface{})
+type WorkerFunc func(interface{}) error
 
 func (pool *Pool) worker() {
 	var job job
@@ -75,9 +75,7 @@ func (pool *Pool) work(f WorkerFunc, data interface{}) (ret error) {
 		}
 	}()
 
-	f(data)
-
-	return nil
+	return f(data)
 }
 
 // SetWorkerFunc sets the function to be processed when sending jobs to the worker.
