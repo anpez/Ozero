@@ -55,6 +55,30 @@ func TestErrorFuncGetsCalledOnPanic(t *testing.T) {
 	assert.NotNil(t, <-c)
 }
 
+func TestErrorFuncGetsOnErrorReturned(t *testing.T) {
+	c := make(chan struct{}, 1)
+
+	pool := NewPool()
+	defer pool.Close()
+
+	pool.SetWorkerFunc(func(data interface{}) error {
+		return fmt.Errorf("an error")
+	}).SetErrorFunc(func(data interface{}, err error) {
+		assert.IsType(t, 1, data)
+		assert.Equal(t, 1, data)
+		c <- struct{}{}
+	})
+	pool.SendJob(1)
+
+	go func() {
+		<-time.After(time.Second)
+		assert.Fail(t, "Test got stuck")
+		// Force the test to end
+		c <- struct{}{}
+	}()
+	assert.NotNil(t, <-c)
+}
+
 func TestFuncGetsRetriedExactly3Times(t *testing.T) {
 	const RETRY = 3
 
